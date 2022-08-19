@@ -1,0 +1,29 @@
+{
+    "name": "parsadanashvili/laravel-smsoffice",
+    "authors": [
+        {
+            "name": "Parsadanashvili",
+            "email": "nikaparsadanashvili@gmail.com"
+        }
+    ],
+    "autoload": {
+        "psr-4": {
+            "Parsadanashvili\\LaravelSmsOffice\\": "src/"
+        }
+    },
+    "require": {
+        "php": ">=7.0.0",
+        "illuminate/support": ">=5.3",
+        "guzzlehttp/guzzle": "^7.0.1"
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "Parsadanashvili\\LaravelSmsOffice\\SmsOfficeServiceProvider"
+            ],
+            "aliases": {
+                "SmsOffice": "Parsadanashvili\\LaravelSmsOffice\\Facades\\SmsOffice"
+            }
+        }
+    }
+}
