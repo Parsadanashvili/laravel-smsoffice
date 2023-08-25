@@ -14,7 +14,7 @@ class SmsOfficeServiceProvider extends ServiceProvider
     public function boot()
     {
         $this->publishes([
-            __DIR__.'/../config/smsoffice.php' => config_path('smsoffice.php'),
+            __DIR__ . '/../config/smsoffice.php' => config_path('smsoffice.php'),
         ], 'config');
     }
 
@@ -27,7 +27,8 @@ class SmsOfficeServiceProvider extends ServiceProvider
     {
         $this->app->singleton(SmsOffice::class, function () {
             return new SmsOffice();
-        });        
-				$this->app->alias(SmsOffice::class, 'sms-office');
+        });
+
+        $this->app->alias(SmsOffice::class, 'sms-office');
     }
 }

@@ -3,13 +3,14 @@
 namespace Parsadanashvili\LaravelSmsOffice;
 
 use GuzzleHttp\Client;
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Log;
 use Parsadanashvili\LaravelSmsOffice\Exceptions\ApiCredentialsException;
 use Parsadanashvili\LaravelSmsOffice\Exceptions\InvalidNumberException;
 
-class SmsOffice {
-    const SEND_URL = 'send/?key=%s&destination=%s&sender=%s&content=%s&urgent=true';
+class SmsOffice
+{
+    const SEND_URL = '/api/v2/send/?key=%s&destination=%s&sender=%s&content=%s&urgent=true';
+    const BALANCE_URL = '/api/getBalance?key=%s';
 
     protected $apiKey;
 
@@ -19,35 +20,26 @@ class SmsOffice {
 
     protected $client;
 
-    public function __construct() {
+    public function __construct()
+    {
         $this->apiKey = config('smsoffice.api_key');
         $this->sender = config('smsoffice.sender');
         $this->driver = config('smsoffice.driver');
 
         $this->client = new Client([
-            'base_uri' => 'http://smsoffice.ge/api/v2/',
+            'base_uri' => 'http://smsoffice.ge',
         ]);
     }
 
     public function send($destination, $message)
     {
-        if($this->driver === 'log') {
-            return Log::info('SMS: '.$destination.' - '.$message);
+        $destination = $this->formatDestination($destination);
+        $message = $this->encodeMessage($message);
+
+        if ($this->driver === 'log') {
+            return Log::info('SMS: ' . $destination . ' - ' . $message);
         }
 
-        $this->checkApiCredentials();
-
-        $url = $this->url($destination, $message);
-
-        $response = $this->client->request('GET', $url)->getBody()->getContents();
-        $response = json_decode($response);
-
-        return $response;
-    }
-
-    
-    private function checkApiCredentials()
-    {
         if (empty($this->apiKey)) {
             throw ApiCredentialsException::apiKeyNotProvided();
         }
@@ -55,6 +47,27 @@ class SmsOffice {
         if (empty($this->sender)) {
             throw ApiCredentialsException::senderNotProvided();
         }
+
+        $url = sprintf(self::SEND_URL, $this->apiKey, $destination, $this->sender, $message);
+
+        $response = $this->client->request('GET', $url)->getBody()->getContents();
+        $response = json_decode($response);
+
+        return $response;
+    }
+
+    public function balance()
+    {
+        if (empty($this->apiKey)) {
+            throw ApiCredentialsException::apiKeyNotProvided();
+        }
+
+        $url = sprintf(self::BALANCE_URL, $this->apiKey);
+
+        $response = $this->client->request('GET', $url)->getBody()->getContents();
+        $response = json_decode($response);
+
+        return $response;
     }
 
     private function formatDestination($destination)
@@ -65,7 +78,7 @@ class SmsOffice {
         if (substr($destination, 0, 3) != '995') {
             $destination = '995' . $destination;
         }
-        
+
         if (strlen($destination) !== 12) {
             throw InvalidNumberException::invalidNumber();
         }
@@ -75,18 +88,10 @@ class SmsOffice {
 
     private function encodeMessage($message)
     {
-        if (strlen($message) !== strlen(utf8_decode($message))) {
+        if (strlen($message) !== strlen(mb_convert_encoding($message, "UTF-8", mb_detect_encoding($message)))) {
             $message = rawurlencode($message);
         }
 
         return $message;
-    }
-
-    public function url($destination, $message)
-    {
-        $destination = $this->formatDestination($destination);
-        $message = $this->encodeMessage($message);
-        $url = sprintf(self::SEND_URL, $this->apiKey, $destination, $this->sender, $message);
-        return $url;
     }
 }
